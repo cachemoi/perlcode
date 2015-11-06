@@ -1,0 +1,178 @@
+#!/usr/bin/perl
+
+use strict;
+
+#
+# set to 1 for lots of debugging output
+#
+use constant DEBUG => 0;
+
+#
+#  minimum size of ORF to output
+#
+use constant MINSIZE => 20;
+
+#
+# hash to make complement sequence
+#
+my %compnuc = ( 'A' => 'T', 'T' => 'A', 'C' => 'G', 'G' => 'C',
+        '-' => '-', ' ' => ' ', '*' => '*', '.' => '.');
+
+#
+# hash for translating DNA
+#
+my %DNAtoAA = (
+        'GCT' => 'A', 'GCC' => 'A', 'GCA' => 'A', 'GCG' => 'A',
+        'TGT' => 'C', 'TGC' => 'C', 'GAT' => 'D', 'GAC' => 'D',
+        'GAA' => 'E', 'GAG' => 'E', 'TTT' => 'F', 'TTC' => 'F',
+        'GGT' => 'G', 'GGC' => 'G', 'GGA' => 'G', 'GGG' => 'G',
+        'CAT' => 'H', 'CAC' => 'H', 'ATT' => 'I', 'ATC' => 'I',
+        'ATA' => 'I', 'AAA' => 'K', 'AAG' => 'K', 'TTG' => 'L',
+        'TTA' => 'L', 'CTT' => 'L', 'CTC' => 'L', 'CTA' => 'L',
+        'CTG' => 'L', 'ATG' => 'M', 'AAT' => 'N', 'AAC' => 'N',
+        'CCT' => 'P', 'CCC' => 'P', 'CCA' => 'P', 'CCG' => 'P',
+        'CAA' => 'Q', 'CAG' => 'Q', 'CGT' => 'R', 'CGC' => 'R',
+        'CGA' => 'R', 'CGG' => 'R', 'AGA' => 'R', 'AGG' => 'R',
+        'TCT' => 'S', 'TCC' => 'S', 'TCA' => 'S', 'TCG' => 'S',
+        'AGT' => 'S', 'AGC' => 'S', 'ACT' => 'T', 'ACC' => 'T',
+        'ACA' => 'T', 'ACG' => 'T', 'GTT' => 'V', 'GTC' => 'V',
+        'GTA' => 'V', 'GTG' => 'V', 'TGG' => 'W', 'TAT' => 'Y',
+        'TAC' => 'Y', 'TAA' => ':', 'TAG' => ':', 'TGA' => ':');
+
+#
+# program will open FASTA files end with *.fa
+# 
+
+print "Enter your file name with .fa extension\n";
+my $file=<STDIN>;
+chomp($file);
+
+my $seq = "";
+my $chr = $file;
+$chr =~ s/\.fa//;
+$chr =~ s/\.\///;
+
+open (FILE, $file) || die "cannot open for reading $file: $!\n";
+
+#
+# reading FASTA formated files, read each line and append 
+# it to the previous.
+# 
+# ignore the def line
+#
+# this assumes that each chromosome is in a file by itself
+#   
+    while (<FILE>) {
+    chop;
+    if ($_ !~ /^>/) {
+        $seq .= $_;
+    }
+    }
+    print STDERR "length of DNA is " . length($seq) . "\n";
+    close (FILE);
+
+#
+# Make reverse complement
+#
+
+    my $revseq = "";
+    my $revtmp = reverse $seq;
+
+    for (my $j = 0; $j < length($revtmp); $j++) {
+    $revseq .= $compnuc{ substr($revtmp, $j, 1) };
+    }
+
+#
+# Make translations
+#
+
+    my $pept = "";
+    my $start = 0;
+    my $stop = 0;
+
+    open (FILE, ">$chr.peptides.fa") || die "cannot open file $!\n";
+
+#
+# $i loop designates which strand, 0 = Watson and 1 = Crick
+#
+    for (my $i = 0; $i < 2; $i++) {
+    if ($i == 1) {
+        $seq = $revseq;
+    }
+#
+# $j is for reading frame, 1, 2 or 3
+#
+    for (my $j = 0; $j < 3; $j++) {
+        print STDERR "FRAME " . (($j + 1) + ($i * 3)) . " \n";
+        if (DEBUG) { print STDERR "\n*"; }
+#
+# translation loop
+# $x loop is for walking throught the framing frame looking for a peptide
+#
+        for (my $x = $j; $x < length($seq); $x += 3) {
+        if (DEBUG) { print STDERR "= $x "; }
+#
+# Beginning of translation loop
+# Only find peptides that start with ATG (methonine)
+#
+        if ( $DNAtoAA{ substr($seq, $x, 3) } eq "M" ) {
+            $start = $x;
+            $stop = $x + 3;
+#
+# Translate until a STOP is found (':') or the end of the sequence is
+# reached $y loop is used after a start has been found, now we
+# translate.  The loop starts with a stop is found ':' or $y is larger
+# than the length of the sequence minus 3.  This is so we always have
+# a full codon.
+#
+
+            for (my $y = $x; ($DNAtoAA{ substr($seq, $y, 3) } ne ":") 
+                                && ($y < (length($seq) - 3)); $y += 3) {
+
+            $pept .= $DNAtoAA{ substr($seq, $y, 3) };
+            $stop = $y + 3;
+            if (DEBUG) { print STDERR "\n+ " . (length($seq) - $start) . 
+                        " -> " . (length($seq) - ($stop + 2)) . " = $pept"; }
+            }
+            $x = $stop;
+#
+# if the peptide is 20 amino acids or longer write it to a FASTA file with 80 char lines
+#
+            if (length($pept) > (MINSIZE - 1)) {
+            my $peptcoord = $chr;
+            $peptcoord =~ s/chr//;
+            if ($i == 0) {
+                $peptcoord .= ":" . ($start + 1) . ":" . ($stop + 3);
+            } else {
+                $peptcoord .= ":" . (length($seq) - $start) . ":" . (length($seq) - ($stop + 2));
+            }
+print FILE ">ORF|" . $peptcoord . "| frame " . (($j + 1) + ($i * 3)). "\n";
+#
+# output sequence in 80 char lines, while processes all sequences larger than 80 characters
+#  in length
+#
+            while (length($pept) > 80) {
+                print FILE substr($pept, 0, 80) . "\n";
+                $pept = substr($pept, 80, length($pept));
+                if (DEBUG) { print STDERR "-"; }
+            }
+#
+# print last bit of $pept
+#
+            print FILE $pept . "\n";
+            if (DEBUG) { print STDERR "."; }
+            }
+            $pept = "";
+        }
+        }
+    }
+    }
+
+#
+# Close chromosome sequence file
+#
+    close (FILE); 
+
+print STDERR "\n\n";
+
+exit;
