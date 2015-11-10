@@ -2,6 +2,7 @@
 
 use warnings;
 use strict;
+use diagnostics;
 use Getopt::Std;
 
 #hash for translation
@@ -24,75 +25,23 @@ my %DNAtoAA = (
         "TGA" => "*", "TGC" => "C", "TGG" => "W", "TGT" => "C",
         "TTA" => "L", "TTC" => "F", "TTG" => "L", "TTT" => "F" );
 
-#declare variables
-
-my ($organism, $chomped_fasta, $fs1, $rs1, @name_seq, $fastafile, $tfs1);
-
 #opens the fasta file or gives the relevant error message
 
 print "which file would you like to open?\n";
 
-($fastafile ) = <STDIN>;
+my ($fastafile ) = <STDIN>;
 
 open (FH , $fastafile ) or die "\nFailed to open file $!";
 
-
-#turn the file into one long string
+#initiate forward and reverse strands
 
 while ( <FH>) {
         chomp $_;
-        $chomped_fasta .= $_;
-}
-
-#extract the organism name
-
-@name_seq = split /sequence/, $chomped_fasta;
-$organism = $name_seq [0];
-
-#initiate forward and reverse strands
-
-$fs1 = $name_seq [1];
-$rs1 = reverse($fs1 );
-
-#split into the 3 reading frames
-
-my $fs2 = substr $fs1, 1;
-my $fs3 = substr $fs2, 1;
-
-my $rs2 = substr $rs1, 1;
-my $rs3 = substr $rs2, 1;
-
-#translate the sequence using the hash
-
-#while (length ($fs1) <= length ($fs1)-2) {
-#        for (my $i=0 ; length ($fs1) <= length ($fs1)-2 ; $i+=3){
-#                foreach my $key (keys %DNAtoAA) {
-#                $tfs1 =~ s/$key/$DNAtoAA{$key}/g;
-#        }
-#    }
-#}
-
-for (my $i =0;$i<=length($fs1)-2;$i+=3) {
-        $tfs1 = substr $fs1, $i , 3, "A";
-        
+	my $forward_strand .= $_;
+	my $reverse_strand = reverse($forward_strand );
 }
 
 
 
-#split ORF
+print "$reverse_strand\n";
 
-my @ORF= split /[M:]/, $tfs1;
-
-#my @ORF = 
-
-#print results
-
-#foreach my $ORFspec (@ORF) {
-#        print "\n$organism\n$ORFspec\n"
-#}
-
-#test
-
-print "\n$tfs1\n";
-
-exit; 
