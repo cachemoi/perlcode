@@ -26,7 +26,7 @@ my %DNAtoAA = (
 
 #declare variables
 
-my ($organism, $chomped_fasta, $fs1, $rs1, @name_seq, $fastafile, $tfs1);
+my ($organism, $chomped_fasta, $fs1, $rs1, @name_seq, $fastafile, @tfs1, $tfs1);
 
 #opens the fasta file or gives the relevant error message
 
@@ -73,15 +73,19 @@ my $rs3 = substr $rs2, 1;
 #}
 
 for (my $i =0;$i<=length($fs1)-2;$i+=3) {
-        $tfs1 = substr $fs1, $i , 3, "A";
-        
+        $_= substr $fs1, $i , 3;
+        my $temp = uc$_;
+        my $translated_value = $DNAtoAA{$temp};
+        push @tfs1, $translated_value;
 }
 
+#merge the translated sequence into one long string
 
+$tfs1 = join '' , @tfs1;
 
-#split ORF
+#split translated sequence into ORF
 
-my @ORF= split /[M:]/, $tfs1;
+my @ORF= split /[M*]/, $tfs1;
 
 #my @ORF = 
 
@@ -93,6 +97,9 @@ my @ORF= split /[M:]/, $tfs1;
 
 #test
 
-print "\n$tfs1\n";
+foreach (@ORF) {
+        print ",$_,";
+}
+
 
 exit; 
