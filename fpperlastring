@@ -6,7 +6,25 @@ use Getopt::Long;
 
 #process command line arguments
 
-
+#my $man_page;
+#GetOptions ('man' => \$man_page) or die "Usage:";
+#if ($man_page){
+#        my $man = "Welcome to Group A's Sequence analysis pipeline.
+#        this is the first element of the pipeline, coded by Maximilien Rothier Bautzer.
+#        \nThis program will open and process the fasta file. It will begin by separating the
+#        DNA into 6 reading frames, 3 in the forward strand and 3 in the reverse strand.
+#        Each of those strands are then translated into proteins using the hash. They are then
+#        split at start and stop codons. In the protein sequence they are noted as 'M' (methioin)
+#        for the start codon and a simple '*' for stop codons. An exeption is made for codons containing 'n',
+#        which denotes that we are unsure about that nucleotide position. Those string values
+#        are pushed into arrays (one for each reading frames). The code then looks for array elements
+#        shorter than 50 nucleotides, which is too small to be considered relevant. Those small elements
+#        are then deleted. The array values are then printed in the appropriate format. Information such
+#        as Open reading frame (ORF) length and which frame it was found in is provided, along with the name of the organism.
+#        Frames 1, 2 and 3 are from the forward strand and frames 4,5, and 6 are in the reverse strand.";
+#        $man =~ s/(.{1,40})/$1\n/gs;
+#        print $man
+#}
 
 #hash for translation
 
@@ -36,7 +54,7 @@ my ($organism, $chomped_fasta, $fs1, $fs2, $fs3, $rs1, $rs2, $rs3, @tfs1, @tfs2,
 
 print "which file would you like to open?\n";
 
-($fastafile ) = <STDIN>;
+($fastafile ) = <>;
 
 open (FH , $fastafile ) or die "\nFailed to open file $!";
 
@@ -145,22 +163,22 @@ my @ORF_F6= split /[M*]/, $trs3;
 #ignore ORFs less than 100 amino acid long
 
 foreach (@ORF_F1) {
-        @ORF_F1 = grep length($_) >= 50, @ORF_F1;
+        @ORF_F1 = grep length($_) >= 100, @ORF_F1;
 }
 foreach (@ORF_F2) {
-        @ORF_F2 = grep length($_) >= 50, @ORF_F2;
+        @ORF_F2 = grep length($_) >= 100, @ORF_F2;
 }
 foreach (@ORF_F3) {
-        @ORF_F3 = grep length($_) >= 50, @ORF_F3;
+        @ORF_F3 = grep length($_) >= 100, @ORF_F3;
 }
 foreach (@ORF_F4) {
-        @ORF_F4 = grep length($_) >= 50, @ORF_F4;
+        @ORF_F4 = grep length($_) >= 100, @ORF_F4;
 }
 foreach (@ORF_F5) {
-        @ORF_F5 = grep length($_) >= 50, @ORF_F5;
+        @ORF_F5 = grep length($_) >= 100, @ORF_F5;
 }
 foreach (@ORF_F6) {
-        @ORF_F6 = grep length($_) >= 50, @ORF_F6;
+        @ORF_F6 = grep length($_) >= 100, @ORF_F6;
 }
 
 #print results
@@ -198,4 +216,4 @@ foreach (@ORF_F6) {
         $ORF_count++;
 }
 
-exit; 
+exit;
